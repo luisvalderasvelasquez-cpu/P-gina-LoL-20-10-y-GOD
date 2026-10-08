@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grieta Competitiva · League of Legends</title>
+<link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+<meta name="description" content="Campeones, draft, builds y cambios de balance de League of Legends con datos de Riot Data Dragon.">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#010a13;--panel:rgba(9,20,40,.82);--gold:#c8aa6e;--gold2:#f0e6d2;--accent:#0ac8b9;--blue:#0a96aa;--red:#e84057;--line:#463714;--txt:#a09b8c}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font-family:Barlow,system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+h1,h2,h3{font-family:Cinzel,serif;color:var(--gold2);letter-spacing:.04em}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Fondo: splash del campeón + partículas hextech */
+#bg{position:fixed;inset:0;z-index:-2;background:#010a13 url(images/fondo.svg) center/cover no-repeat;filter:brightness(.35) saturate(1.2);transition:background-image .8s,opacity .8s}
+#bgfade{position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse at 50% 20%,transparent,var(--bg) 85%),linear-gradient(transparent 40%,var(--bg))}
+.spark{position:fixed;bottom:-10px;width:3px;height:3px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);z-index:-1;animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-110vh) translateX(30px);opacity:0}}
+
+/* HUD */
+.hud{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:1rem;padding:.7rem 1.4rem;background:linear-gradient(#010a13f2,#010a13cc);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.hud::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:100%;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.logo{display:flex;align-items:center;gap:.5rem;font-family:Cinzel;font-weight:800;color:var(--gold);font-size:1.15rem;white-space:nowrap}
+nav{display:flex;gap:.3rem;margin-left:auto;flex-wrap:wrap}
+nav a{color:var(--txt);text-decoration:none;padding:.4rem .8rem;border:1px solid transparent;font-weight:600;transition:.25s}
+nav a:hover{color:var(--gold2);border-color:var(--line);background:#c8aa6e14}
+.player{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
+.player input[type=text]{width:120px;background:#0a1428;border:1px solid var(--line);color:var(--gold2);padding:.35rem .5rem;font:inherit}
+.player input[type=color]{width:28px;height:28px;border:1px solid var(--line);background:none;padding:0;cursor:pointer}
+.patch-tag{border:1px solid var(--gold);color:var(--gold);padding:.15rem .6rem;font-weight:600;font-size:.85rem}
+
+main{max-width:1200px;margin:auto;padding:0 1.2rem 4rem}
+section{padding-top:4.5rem}
+.hero{min-height:62vh;display:flex;flex-direction:column;justify-content:center}
+.hero h1{font-size:clamp(2.2rem,6vw,4.6rem);line-height:1.05;max-width:14ch;animation:enter 1s both}
+.hero p{max-width:52ch;margin:1.2rem 0 1.8rem;font-size:1.1rem;animation:enter 1s .25s both}
+@keyframes enter{from{opacity:0;transform:translateY(24px) scale(.98)}}
+.btn{background:linear-gradient(#1e2328,#0a0e13);color:var(--gold2);border:1px solid var(--gold);padding:.65rem 1.4rem;font:600 .95rem Barlow;cursor:pointer;transition:.25s;text-decoration:none;display:inline-block}
+.btn:hover{box-shadow:0 0 18px var(--accent);border-color:var(--accent);color:#fff}
+.btn.sm{padding:.35rem .8rem;font-size:.85rem}
+.panel{background:var(--panel);border:1px solid var(--line);padding:1.2rem;position:relative}
+.panel::before,.panel::after{content:"";position:absolute;width:14px;height:14px;border:2px solid var(--gold)}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.head{display:flex;flex-wrap:wrap;align-items:end;gap:1rem;margin-bottom:1.2rem}
+.head h2{font-size:1.8rem}
+.tools{display:flex;gap:.5rem;flex-wrap:wrap;margin-left:auto}
+.tools input,.tools select{background:#0a1428;border:1px solid var(--line);color:var(--gold2);padding:.5rem .7rem;font:inherit}
+
+/* Campeones */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:.6rem}
+.champ{cursor:grab;text-align:center;font-size:.72rem;color:var(--txt);border:1px solid var(--line);background:#0a1428;padding:3px;transition:transform .2s,border-color .2s;user-select:none}
+.champ img{width:100%;display:block;aspect-ratio:1;object-fit:cover}
+.champ:hover{transform:translateY(-4px) scale(1.05);border-color:var(--accent);z-index:2}
+.champ span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 0}
+.count{color:var(--gold);font-weight:600}
+
+/* Draft */
+.draft{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.team h3{margin-bottom:.6rem}
+.team.b h3{color:var(--blue)}.team.r h3{color:var(--red)}
+.slots{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem}
+.slot{aspect-ratio:1;border:1px dashed var(--line);background:#050d1a;display:grid;place-items:center;font-size:.7rem;cursor:pointer;overflow:hidden;transition:.2s}
+.slot img{width:100%;height:100%;object-fit:cover;animation:pop .35s}
+.slot.over{border-color:var(--accent);background:#0ac8b922;transform:scale(1.06)}
+.team.b .slot.full{border:2px solid var(--blue)}.team.r .slot.full{border:2px solid var(--red)}
+.bans .slot{aspect-ratio:1;opacity:.95}.bans .slot img{filter:grayscale(1)}
+.bans{margin-top:.6rem}.bans small{display:block;margin-bottom:.3rem}
+@keyframes pop{from{transform:scale(1.5);opacity:0}}
+.score{margin-top:1rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+#verdict{color:var(--gold2);font-weight:600}
+
+/* Balance */
+.bal-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.8rem;margin-top:1rem}
+.chg{display:flex;gap:.7rem;background:#0a1428;border:1px solid var(--line);padding:.6rem;animation:pop .4s both}
+.chg img{width:52px;height:52px}
+.chg b{color:var(--gold2)}
+.chg ul{list-style:none;font-size:.82rem;padding:0}
+.up{color:#4be08a}.down{color:var(--red)}
+
+/* Competitivo */
+.leagues{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}
+.lg{cursor:pointer;transition:.3s;border:1px solid var(--line);padding:1rem;background:#0a1428}
+.lg:hover,.lg.on{border-color:var(--gold);transform:translateY(-4px)}
+.lg h3{font-size:1.1rem;color:var(--gold)}
+#lgInfo{margin-top:1rem}
+
+/* Logo personalizado */
+.logo svg{width:38px;height:38px;flex:none}
+.logo .wm{display:flex;flex-direction:column;line-height:1.1}
+.logo .wm b{font-size:1.05rem;max-width:11rem;overflow:hidden;text-overflow:ellipsis}
+.logo .wm small{font:600 .58rem Barlow,sans-serif;letter-spacing:.28em;color:var(--txt)}
+.hero-logo{width:130px;margin-bottom:1.2rem;filter:drop-shadow(0 0 14px var(--accent));animation:enter 1s both}
+.hero-logo svg{width:100%;height:auto;display:block}
+.hero-logo .ring{transform-box:fill-box;transform-origin:center;animation:spin 30s linear infinite}
+.logo .ring{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Quiz */
+.qz-top{display:flex;justify-content:space-between;font-weight:600;color:var(--gold);margin-bottom:.4rem}
+.qz-q{margin:.9rem 0;font-size:1.25rem}
+.qz-img{width:120px;height:120px;border:2px solid var(--gold);display:block;margin-bottom:1rem;animation:pop .4s}
+.zoom{height:220px;background-size:420%;background-repeat:no-repeat;border:2px solid var(--gold);margin-bottom:1rem;transition:background-size .8s,background-position .8s}
+.zoom.reveal{background-size:cover;background-position:center 20%!important}
+.qz-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.6rem}
+.qz-o{background:#0a1428;color:var(--gold2);border:1px solid var(--line);padding:.8rem;font:600 1rem Barlow;text-align:left;cursor:pointer;transition:.2s}
+.qz-o:hover:not(:disabled){border-color:var(--accent);transform:translateX(4px)}
+.qz-o:disabled{cursor:default}
+.qz-o kbd{display:inline-block;width:1.4rem;color:var(--accent)}
+.qz-o.ok{background:#0f3d2a;border-color:#4be08a}.qz-o.no{background:#4a1520;border-color:var(--red)}
+.qz-type{display:flex;gap:.5rem;flex-wrap:wrap}
+.qz-type input{flex:1;min-width:200px;background:#0a1428;border:1px solid var(--line);color:var(--gold2);padding:.6rem;font:inherit}
+.qz-fb{margin-top:1rem;min-height:1.5rem;animation:enter .3s}
+.qz-fb.good{color:#4be08a}.qz-fb.bad{color:var(--red)}
+.qz-intro,.qz-end{text-align:center;padding:1rem}
+.qz-score{font-family:Cinzel;font-size:5rem;color:var(--gold);line-height:1;animation:pop .6s}
+.qz-score small{font-size:1.6rem;color:var(--txt)}
+.pips{display:flex;justify-content:center;gap:.5rem;margin:1.2rem 0}
+.pips i{width:16px;height:16px;transform:rotate(45deg);animation:pop .4s both}
+.pips i.g{background:#4be08a}.pips i.b{background:var(--red)}
+.ranks{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:1rem 0}
+.ranks span{border:1px solid var(--line);padding:.3rem .7rem;font-size:.85rem}
+.ranks span.on{border-color:var(--gold);color:var(--gold2);background:#c8aa6e22}
+.rev{text-align:left;margin-top:1rem}.rev ul{list-style:none;padding:0}.rev li{margin:.3rem 0;font-size:.9rem}
+
+/* Modal */
+dialog{margin:auto;border:1px solid var(--gold);background:#010a13;color:var(--txt);max-width:900px;width:94vw;max-height:92vh;overflow:auto;padding:0}
+dialog::backdrop{background:#000c;backdrop-filter:blur(4px)}
+dialog[open]{animation:enter .4s}
+.m-img{height:260px;background:center 20%/cover;position:relative}
+.m-img::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 40%,#010a13)}
+.m-body{padding:1.2rem 1.6rem 1.6rem}
+.bar{height:8px;background:#1e2328;margin:.2rem 0 .7rem}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--accent));width:0;transition:width .8s}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.4rem;margin:.8rem 0;font-size:.9rem}
+.close{position:absolute;right:.8rem;top:.8rem;z-index:2}
+.msg{padding:2rem;text-align:center}
+.build{margin-top:1.2rem;border-top:1px solid var(--line);padding-top:.6rem}
+.build h3{font-size:1.05rem;margin:1.1rem 0 .5rem;color:var(--gold)}
+.build small{display:block;margin-bottom:.5rem}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.5rem}
+.it{background:#0a1428;border:1px solid var(--line);padding:.4rem;font-size:.85rem}
+.it summary{cursor:pointer;display:flex;align-items:center;gap:.5rem;list-style:none}
+.it summary img{width:40px;height:40px;border:1px solid var(--gold)}
+.it summary span,.tree .gp{margin-left:auto;color:#f5c542;font-weight:600;white-space:nowrap}
+.it[open]{border-color:var(--accent)}
+.tree,.tree ul{list-style:none;padding-left:.8rem;border-left:1px solid var(--line);margin:.3rem 0}
+.tree li{display:block;margin:.2rem 0}
+.tree img{width:22px;height:22px;vertical-align:middle}
+.tree .gp{margin-left:.5rem}
+.order{overflow-x:auto}
+.order table{border-collapse:collapse;font-size:.72rem;min-width:640px}
+.order td,.order th{border:1px solid var(--line);min-width:26px;height:26px;text-align:center}
+.order td.on{background:var(--accent);color:#010a13;font-weight:800}
+.order td.ult.on{background:var(--gold)}
+.order img{width:22px;height:22px;vertical-align:middle}
+.total{color:#f5c542;font-weight:600}
+footer{text-align:center;padding:2rem;font-size:.85rem;border-top:1px solid var(--line)}
+
+@media(max-width:760px){.draft{grid-template-columns:1fr}.hud{flex-wrap:wrap}nav{margin-left:0;width:100%}.player input[type=text]{width:90px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<noscript><p style="padding:2rem;background:#010a13;color:#f0e6d2">Esta página necesita JavaScript activado para funcionar.</p></noscript>
+<div id="bg"></div><div id="bgfade"></div>
+
+<header class="hud">
+  <div class="logo" id="logo"><img src="images/logo.svg" alt="" width="28" height="28"> GRIETA COMPETITIVA</div>
+  <span class="patch-tag" id="patchTag">Parche …</span>
+  <nav>
+    <a href="#campeones">Campeones</a><a href="#draft">Draft</a><a href="#balance">Balance</a><a href="#quiz">Quiz</a><a href="#competitivo">Competitivo</a>
+  </nav>
+  <div class="player">
+    <input type="text" id="nick" placeholder="Tu invocador" maxlength="16" aria-label="Nombre de invocador">
+    <input type="color" id="color" value="#0ac8b9" aria-label="Color de acento">
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-logo" id="heroLogo" aria-hidden="true"></div>
+    <h1 id="title">Domina la Grieta del Invocador</h1>
+    <p>Explora campeones, arma tu draft de torneo y descubre qué estadísticas cambiaron entre parches. Presiona <b>/</b> para buscar rápido.</p>
+    <div><a class="btn" href="#draft">Armar un draft</a> <button class="btn" id="randBg">Cambiar fondo</button></div>
+  </section>
+
+  <section id="campeones">
+    <div class="head">
+      <h2>Campeones <span class="count" id="cnt"></span></h2>
+      <div class="tools">
+        <input id="q" type="search" placeholder="Buscar campeón…" aria-label="Buscar campeón">
+        <select id="role" aria-label="Filtrar por rol">
+          <option value="">Todos los roles</option><option value="Fighter">Luchador</option><option value="Tank">Tanque</option>
+          <option value="Mage">Mago</option><option value="Assassin">Asesino</option><option value="Marksman">Tirador</option><option value="Support">Soporte</option>
+        </select>
+      </div>
+    </div>
+    <div class="panel"><div class="grid" id="grid"><p class="msg">Cargando campeones desde Riot Data Dragon…</p></div></div>
+  </section>
+
+  <section id="draft">
+    <div class="head"><h2>Simulador de Draft</h2>
+      <div class="tools"><button class="btn sm" id="dRand">Draft aleatorio</button><button class="btn sm" id="dReset">Reiniciar</button></div></div>
+    <p style="margin-bottom:1rem">Arrastra campeones a los espacios (o haz clic en uno para llenar el siguiente pick). Clic en un espacio para vaciarlo.</p>
+    <div class="draft">
+      <div class="panel team b"><h3>Lado Azul</h3><div class="slots" id="bluePicks"></div>
+        <div class="bans"><small>Bans</small><div class="slots" id="blueBans"></div></div></div>
+      <div class="panel team r"><h3>Lado Rojo</h3><div class="slots" id="redPicks"></div>
+        <div class="bans"><small>Bans</small><div class="slots" id="redBans"></div></div></div>
+    </div>
+    <div class="score panel"><button class="btn sm" id="analyze">Analizar composiciones</button><span id="verdict">Completa ambos equipos para ver el análisis.</span></div>
+  </section>
+
+  <section id="balance">
+    <div class="head"><h2>Cambios de balance entre parches</h2>
+      <div class="tools"><select id="pA" aria-label="Parche anterior"></select><select id="pB" aria-label="Parche nuevo"></select><button class="btn sm" id="cmp">Comparar</button></div></div>
+    <div class="panel"><p>Compara las estadísticas base de cada campeón entre dos versiones del juego (datos reales de Data Dragon).</p>
+      <div class="bal-list" id="balList"></div></div>
+  </section>
+
+  <section id="quiz">
+    <div class="head"><h2>Mini-Quiz de Campeones</h2><span class="count" id="qzBest"></span></div>
+    <div class="panel" id="qz"></div>
+  </section>
+
+  <section id="competitivo">
+    <div class="head"><h2>Escena competitiva</h2></div>
+    <div class="leagues" id="leagues"></div>
+    <div class="panel" id="lgInfo">Selecciona una liga para ver su información.</div>
+  </section>
+</main>
+
+<dialog id="modal"><button class="btn sm close" id="mClose">✕</button><div id="mContent"></div></dialog>
+<footer>Proyecto escolar<span id="by"></span> · Datos: Riot Data Dragon · No afiliado a Riot Games · <span id="foot"></span></footer>
+
+<script>
+const DD='https://ddragon.leagueoflegends.com';
+const $=s=>document.querySelector(s);
+/* Descarga JSON de la API y lo guarda en localStorage (las URLs llevan la versión, así que nunca caducan) */
+async function getJSON(url){
+  const k='lol_c:'+url;
+  try{const s=localStorage.getItem(k);if(s)return JSON.parse(s)}catch(e){}
+  const d=await (await fetch(url)).json();
+  try{localStorage.setItem(k,JSON.stringify(d))}catch(e){
+    try{Object.keys(localStorage).filter(x=>x.startsWith('lol_c:')).forEach(x=>localStorage.removeItem(x));localStorage.setItem(k,JSON.stringify(d))}catch(_){}}
+  return d;
+}
+/* Si una imagen remota falla, se muestra una local */
+document.addEventListener('error',e=>{const t=e.target;if(t.tagName==='IMG'&&!t.dataset.fb){t.dataset.fb='1';t.src='images/placeholder.svg'}},true);
+let VER='',CH={},ITEMS={},ORDER=[],pickTurn=0;
+const state={bP:Array(5).fill(null),rP:Array(5).fill(null),bB:Array(5).fill(null),rB:Array(5).fill(null)};
+const ZONES={bP:'bluePicks',rP:'redPicks',bB:'blueBans',rB:'redBans'};
+const ROLE_ES={Fighter:'Luchador',Tank:'Tanque',Mage:'Mago',Assassin:'Asesino',Marksman:'Tirador',Support:'Soporte'};
+
+/* Ligas: edita esta lista con tus propios datos */
+const LEAGUES=[
+ {n:'LCK',r:'Corea del Sur',d:'Famosa por su juego macro, disciplina y estrategia de equipos como T1 y Gen.G.'},
+ {n:'LPL',r:'China',d:'Estilo agresivo y peleas constantes; cuenta con muchos equipos y jugadores estrella.'},
+ {n:'LEC',r:'Europa',d:'Liga con identidad propia, draft creativo y mucha personalidad en los equipos.'},
+ {n:'LTA',r:'América',d:'Liga que reúne a la región norte y sur del continente. Hay equipos latinos compitiendo.'},
+ {n:'Worlds',r:'Internacional',d:'El campeonato mundial: las mejores regiones se enfrentan por la Copa del Invocador.'}
+];
+
+/* ---------- Personalización ---------- */
+function applyPersonal(){
+  const n=localStorage.getItem('lol_nick')||'',c=localStorage.getItem('lol_color')||'#0ac8b9';
+  document.documentElement.style.setProperty('--accent',c);
+  $('#color').value=c;if(document.activeElement!==$('#nick'))$('#nick').value=n;
+  $('#title').textContent=n?`Bienvenido, ${n}. Domina la Grieta`:'Domina la Grieta del Invocador';
+  renderLogo();
+}
+$('#nick').addEventListener('input',e=>{localStorage.setItem('lol_nick',e.target.value.trim());applyPersonal()});
+$('#color').addEventListener('input',e=>{localStorage.setItem('lol_color',e.target.value);applyPersonal()});
+
+/* ---------- Logo personalizado ---------- */
+const AUTOR=''; // opcional: escribe aquí tu nombre para dejarlo fijo (si el campo "Tu invocador" está vacío, se usa este)
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function initials(n){const w=n.split(/\s+/).filter(x=>/[\p{L}\p{N}]/u.test(x[0]||''));return(w.length>1?w[0][0]+w[1][0]:(w[0]||'L')[0]).toUpperCase()}
+function logoSVG(name,id,ac){
+  const t=esc(initials(name)),fs=t.length>1?29:44;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 108 108" role="img" aria-label="Logo de ${esc(name)}"><defs><linearGradient id="g${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0e6d2"/><stop offset=".5" stop-color="#c8aa6e"/><stop offset="1" stop-color="#7a5c1e"/></linearGradient></defs><circle class="ring" cx="50" cy="50" r="52" fill="none" stroke="${ac}" stroke-opacity=".6" stroke-width="1.4" stroke-dasharray="2 7"/><polygon points="50,2 92,26 92,74 50,98 8,74 8,26" fill="#010a13" stroke="url(#g${id})" stroke-width="3.5"/><polygon points="50,13 82,31.5 82,68.5 50,87 18,68.5 18,31.5" fill="none" stroke="${ac}" stroke-opacity=".7" stroke-width="1.5"/><path d="M50 2l5 7-5 7-5-7zM50 98l5-7-5-7-5 7z" fill="url(#g${id})"/><text x="50" y="52" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,Georgia,serif" font-weight="800" font-size="${fs}" fill="url(#g${id})">${t}</text></svg>`;
+}
+function renderLogo(){
+  const real=$('#nick').value.trim()||AUTOR,name=real||'Invocador';
+  const ac=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#0ac8b9';
+  $('#logo').innerHTML=`${logoSVG(name,'h',ac)}<span class="wm"><b>${esc(name)}</b><small>GRIETA COMPETITIVA</small></span>`;
+  $('#heroLogo').innerHTML=logoSVG(name,'r',ac);
+  $('#by').textContent=real?' de '+real:'';
+  document.title=real?`${real} · Grieta Competitiva · League of Legends`:'Grieta Competitiva · League of Legends';
+  const f=document.querySelector('link[rel=icon]');if(f)f.href='data:image/svg+xml,'+encodeURIComponent(logoSVG(name,'f',ac));
+}
+
+/* ---------- Partículas ---------- */
+for(let i=0;i<22;i++){const s=document.createElement('i');s.className='spark';
+ s.style.left=Math.random()*100+'vw';s.style.animationDuration=(8+Math.random()*12)+'s';s.style.animationDelay=(-Math.random()*15)+'s';document.body.appendChild(s)}
+
+/* ---------- API ---------- */
+async function init(){
+  try{
+    const vs=await (await fetch(`${DD}/api/versions.json`)).json();
+    VER=vs[0];$('#patchTag').textContent='Parche '+VER.split('.').slice(0,2).join('.');
+    const opts=vs.slice(0,15).map(v=>`<option value="${v}">${v}</option>`).join('');
+    $('#pA').innerHTML=opts;$('#pB').innerHTML=opts;$('#pA').value=vs[1];$('#pB').value=vs[0];
+    const d=await getJSON(`${DD}/cdn/${VER}/data/es_MX/champion.json`);
+    try{ITEMS=(await getJSON(`${DD}/cdn/${VER}/data/es_MX/item.json`)).data}catch(e){}
+    CH=d.data;ORDER=Object.values(CH).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+    renderGrid();buildSlots();randomBg();
+    $('#foot').textContent='Versión de datos '+VER;
+  }catch(e){$('#grid').innerHTML='<p class="msg">No se pudo conectar con la API. Revisa tu conexión e intenta de nuevo.</p>'}
+}
+const icon=c=>`${DD}/cdn/${VER}/img/champion/${c.image.full}`;
+const splash=(id,n=0)=>`${DD}/cdn/img/champion/splash/${id}_${n}.jpg`;
+function randomBg(){const c=ORDER[Math.floor(Math.random()*ORDER.length)];$('#bg').style.backgroundImage=`url(${splash(c.id)}),url(images/fondo.svg)`}
+$('#randBg').onclick=randomBg;
+
+/* ---------- Grilla ---------- */
+function renderGrid(){
+  const q=$('#q').value.toLowerCase(),r=$('#role').value;
+  const list=ORDER.filter(c=>c.name.toLowerCase().includes(q)&&(!r||c.tags.includes(r)));
+  $('#cnt').textContent=`(${list.length})`;
+  $('#grid').innerHTML=list.length?list.map(c=>`<div class="champ" draggable="true" data-id="${c.id}" tabindex="0" role="button" aria-label="${c.name}"><img src="${icon(c)}" alt="" loading="lazy"><span>${c.name}</span></div>`).join(''):'<p class="msg">Ningún campeón coincide con tu búsqueda.</p>';
+}
+let qt;$('#q').oninput=()=>{clearTimeout(qt);qt=setTimeout(renderGrid,120)};$('#role').onchange=renderGrid;
+document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();$('#q').focus();$('#campeones').scrollIntoView()}});
+
+$('#grid').addEventListener('dragstart',e=>{const c=e.target.closest('.champ');if(c)e.dataTransfer.setData('text/plain',c.dataset.id)});
+$('#grid').addEventListener('click',e=>{const c=e.target.closest('.champ');if(c)openModal(c.dataset.id)});
+$('#grid').addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('.champ');if(c)openModal(c.dataset.id)}});
+
+/* ---------- Modal ---------- */
+function openModal(id){
+  const c=CH[id],i=c.info,s=c.stats;
+  const bar=(l,v)=>`<div>${l} <b>${v}/10</b></div><div class="bar"><i data-w="${v*10}"></i></div>`;
+  $('#mContent').innerHTML=`<div class="m-img" style="background-image:url(${splash(id)})"></div><div class="m-body">
+   <h2>${c.name}</h2><p style="color:var(--gold)">${c.title} · ${c.tags.map(t=>ROLE_ES[t]||t).join(' / ')}</p>
+   <p style="margin:.8rem 0">${c.blurb}</p>
+   ${bar('Ataque',i.attack)}${bar('Defensa',i.defense)}${bar('Magia',i.magic)}${bar('Dificultad',i.difficulty)}
+   <div class="stats"><span>Vida: ${s.hp}</span><span>Armadura: ${s.armor}</span><span>Daño: ${s.attackdamage}</span><span>Rango: ${s.attackrange}</span><span>Velocidad: ${s.movespeed}</span><span>Resist. mágica: ${s.spellblock}</span></div>
+   <button class="btn sm" onclick="quickAdd('${id}');$('#modal').close()">Añadir al draft</button> <a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent(c.name+' build meta lol')}">Ver build meta</a><div class="build" id="buildBox"><p class="msg">Cargando build…</p></div></div>`;
+  $('#modal').showModal();
+  requestAnimationFrame(()=>document.querySelectorAll('.bar i').forEach(b=>b.style.width=b.dataset.w+'%'));
+  $('#bg').style.backgroundImage=`url(${splash(id)}),url(images/fondo.svg)`;
+  loadBuild(id);
+}
+$('#mClose').onclick=()=>$('#modal').close();
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')e.target.close()});
+
+/* ---------- Builds ---------- */
+/* Ids de objetos por clase; los que ya no existan en el parche se reemplazan solos */
+const SETS={
+ Marksman:{s:[1055,2003],b:[3006],c:[6672,3031,3036,3033,3026,3072]},
+ Fighter:{s:[1055,2003],b:[3047],c:[6630,3071,3053,3156,3742,3026]},
+ Assassin:{s:[1055,2003],b:[3047],c:[6692,3142,6676,3814,3033,3026]},
+ Mage:{s:[1056,2003],b:[3020],c:[6655,3089,3157,3135,3165,6653]},
+ Tank:{s:[1054,2003],b:[3047],c:[3068,3075,3143,3065,3742,3110]},
+ Support:{s:[3865,2003],b:[3158],c:[3190,3107,2065,3504,6617,3222]}};
+const DYN={Marksman:['Damage','CriticalStrike','AttackSpeed'],Fighter:['Damage','Health'],Assassin:['Damage','ArmorPenetration'],Mage:['SpellDamage'],Tank:['Armor','SpellBlock'],Support:['ManaRegen','Aura']};
+const okItem=id=>{const i=ITEMS[id];return i&&i.gold&&i.gold.purchasable&&i.maps&&i.maps['11']};
+const dyn=(tags,have,n,boots)=>Object.entries(ITEMS).filter(([id,i])=>okItem(id)&&!have.includes(id)&&!i.requiredChampion&&!i.requiredAlly&&!i.consumed&&((i.tags||[]).includes('Boots')===!!boots)&&(boots?i.gold.total>=900:!i.into&&i.gold.total>=2300&&tags.some(t=>(i.tags||[]).includes(t)))).sort((a,b)=>b[1].gold.total-a[1].gold.total).slice(0,n).map(e=>e[0]);
+function buildFor(c){
+  let k=c.tags[0];
+  if(!['Support','Tank','Mage'].includes(k)&&c.info.magic>c.info.attack)k='Mage';
+  const S=SETS[k]||SETS.Fighter,t=DYN[k]||DYN.Fighter;
+  const get=(ids,n,boots)=>{let r=ids.map(String).filter(okItem);if(r.length<n)r=r.concat(dyn(t,r,n-r.length,boots));return r.slice(0,n)};
+  return{k,start:S.s.map(String).filter(okItem),boots:get(S.b,1,true),core:get(S.c,6)};
+}
+const itImg=i=>`${DD}/cdn/${VER}/img/item/${i}.png`;
+const tree=(i,d)=>{const it=ITEMS[i];if(!it)return'';const f=it.from||[];
+  return `<li><img src="${itImg(i)}" alt=""> ${it.name}<span class="gp">${it.gold.total}</span>${f.length&&d<3?`<ul>${f.map(x=>tree(x,d+1)).join('')}</ul>`:''}</li>`};
+const card=i=>{const it=ITEMS[i],f=it.from||[];
+  return `<details class="it"><summary><img src="${itImg(i)}" alt=""><b>${it.name}</b><span>${it.gold.total} ◉</span></summary>${f.length?`<p>Receta: ${f.length} componentes + ${it.gold.base} de oro</p><ul class="tree">${f.map(x=>tree(x,1)).join('')}</ul>`:'<p>Objeto básico: se compra directo en la tienda.</p>'}</details>`};
+async function loadBuild(id){
+  const box=$('#buildBox'),c=CH[id];
+  if(!Object.keys(ITEMS).length){box.innerHTML='<p class="msg">No se pudieron cargar los objetos de la tienda.</p>';return}
+  const b=buildFor(c);let sp=[];
+  try{sp=(await getJSON(`${DD}/cdn/${VER}/data/es_MX/champion/${id}.json`)).data[id].spells}catch(e){}
+  if(!box.isConnected)return;
+  const list=[...b.boots,...b.core],total=list.reduce((s,i)=>s+ITEMS[i].gold.total,0);
+  let html=`<h3>Build sugerida</h3><small>Generada según la clase del campeón y los objetos disponibles en el parche ${VER}. No es la build meta exacta: usa "Ver build meta" para comparar.</small>`;
+  if(b.start.length)html+=`<h3>Objetos iniciales</h3><div class="items">${b.start.map(card).join('')}</div>`;
+  html+=`<h3>Botas y objetos principales · <span class="total">${total} de oro en total</span></h3><div class="items">${list.map(card).join('')}</div>`;
+  if(sp.length>=4){
+    const cd=s=>parseFloat((s.cooldownBurn||'99').split('/')[0])||99;
+    const o=[0,1,2].sort((a,z)=>cd(sp[a])-cd(sp[z])||a-z);
+    const seq=[o[0],o[1],o[2],o[0],o[0],3,o[0],o[1],o[0],o[1],3,o[1],o[1],o[2],o[2],3,o[2],o[2]];
+    const rows=[0,1,2,3].map(r=>`<tr><th><img src="${DD}/cdn/${VER}/img/spell/${sp[r].image.full}" alt="" title="${sp[r].name}"> ${'QWER'[r]}</th>${seq.map((x,l)=>`<td class="${x===r?'on':''} ${r===3?'ult':''}">${x===r?l+1:''}</td>`).join('')}</tr>`).join('');
+    html+=`<h3>Orden de habilidades · máximo ${o.map(i=>'QWE'[i]).join(' > ')}</h3><small>Prioriza primero la habilidad con menor enfriamiento y sube R en los niveles 6, 11 y 16.</small><div class="order"><table><tr><th>Nivel</th>${seq.map((_,l)=>`<th>${l+1}</th>`).join('')}</tr>${rows}</table></div>`;
+  }
+  box.innerHTML=html;
+}
+
+/* ---------- Draft ---------- */
+function buildSlots(){
+  for(const k in ZONES){const el=$('#'+ZONES[k]);el.innerHTML='';
+    state[k].forEach((_,i)=>{const s=document.createElement('div');s.className='slot';s.dataset.k=k;s.dataset.i=i;s.textContent=k.endsWith('B')?'Ban':'Pick';
+      s.addEventListener('dragover',e=>{e.preventDefault();s.classList.add('over')});
+      s.addEventListener('dragleave',()=>s.classList.remove('over'));
+      s.addEventListener('drop',e=>{e.preventDefault();s.classList.remove('over');const id=e.dataTransfer.getData('text/plain');if(CH[id])place(k,i,id)});
+      s.addEventListener('click',()=>{state[k][i]=null;drawDraft()});
+      el.appendChild(s)})}
+}
+function used(id){return Object.values(state).some(a=>a.includes(id))}
+function place(k,i,id){
+  if(used(id)){toast('Ese campeón ya está en el draft.');return}
+  state[k][i]=id;drawDraft()
+}
+function quickAdd(id){
+  if(used(id)){toast('Ese campeón ya está en el draft.');return}
+  const order=['bP','rP'];
+  for(let t=0;t<2;t++){const k=order[(pickTurn+t)%2],i=state[k].indexOf(null);
+    if(i>-1){state[k][i]=id;pickTurn++;drawDraft();$('#draft').scrollIntoView({behavior:'smooth'});return}}
+  toast('Los picks están completos.');
+}
+function drawDraft(){
+  for(const k in ZONES)document.querySelectorAll(`#${ZONES[k]} .slot`).forEach((s,i)=>{
+    const id=state[k][i];s.classList.toggle('full',!!id);
+    s.innerHTML=id?`<img src="${icon(CH[id])}" alt="${CH[id].name}" title="${CH[id].name}">`:(k.endsWith('B')?'Ban':'Pick')});
+}
+function toast(m){$('#verdict').textContent=m}
+function profile(team){
+  const p={ad:0,ap:0,tank:0,cc:0,n:0};
+  team.filter(Boolean).forEach(id=>{const i=CH[id].info,t=CH[id].tags;p.n++;
+    p.ad+=i.attack;p.ap+=i.magic;p.tank+=i.defense;if(t.includes('Tank')||t.includes('Support'))p.cc++});return p}
+function analyze(){
+  const b=profile(state.bP),r=profile(state.rP);
+  if(b.n<5||r.n<5){toast('Completa los 5 picks de cada equipo.');return}
+  const sc=p=>p.ad*.5+p.ap*.5+p.tank*.7+p.cc*2+(Math.min(p.ad,p.ap)>15?3:0);
+  const tip=p=>p.ap<12?'le falta daño mágico':p.ad<12?'le falta daño físico':p.tank<14?'es frágil en la línea frontal':'está bien equilibrado';
+  const sb=sc(b),sr=sc(r),w=sb>=sr?'Azul':'Rojo';
+  toast(`Ventaja para el lado ${w} (${sb.toFixed(0)} vs ${sr.toFixed(0)}). Azul ${tip(b)}; Rojo ${tip(r)}.`);
+}
+$('#analyze').onclick=analyze;
+$('#dReset').onclick=()=>{for(const k in state)state[k].fill(null);pickTurn=0;drawDraft();toast('Draft reiniciado.')};
+$('#dRand').onclick=()=>{const pool=[...ORDER].sort(()=>Math.random()-.5).map(c=>c.id);let j=0;
+  for(const k in state)state[k]=state[k].map(()=>pool[j++]);drawDraft();analyze()};
+
+/* ---------- Balance (diff entre parches) ---------- */
+const STAT_ES={hp:'Vida',hpperlevel:'Vida/nivel',armor:'Armadura',armorperlevel:'Armadura/nivel',spellblock:'Res. mágica',attackdamage:'Daño de ataque',attackdamageperlevel:'Daño/nivel',attackspeed:'Vel. de ataque',movespeed:'Vel. de mov.',attackrange:'Rango',hpregen:'Regen. vida',mp:'Maná'};
+$('#cmp').onclick=async()=>{
+  const a=$('#pA').value,b=$('#pB').value,box=$('#balList');
+  if(a===b){box.innerHTML='<p class="msg">Elige dos parches distintos.</p>';return}
+  box.innerHTML='<p class="msg">Comparando parches…</p>';
+  try{
+    const [da,db]=await Promise.all([a,b].map(v=>getJSON(`${DD}/cdn/${v}/data/es_MX/champion.json`)));
+    const out=[];
+    for(const id in db.data){const o=da.data[id],n=db.data[id];
+      if(!o){out.push({id,n,lines:['<li class="up">Campeón nuevo</li>']});continue}
+      const lines=[];
+      for(const k in STAT_ES){const x=o.stats[k],y=n.stats[k];
+        if(x!==undefined&&y!==undefined&&Math.abs(x-y)>1e-6){const up=y>x;
+          lines.push(`<li class="${up?'up':'down'}">${up?'▲':'▼'} ${STAT_ES[k]}: ${+x.toFixed(2)} → ${+y.toFixed(2)}</li>`)}}
+      if(lines.length)out.push({id,n,lines})}
+    box.innerHTML=out.length?out.map(c=>`<div class="chg"><img src="${DD}/cdn/${b}/img/champion/${c.n.image.full}" alt=""><div><b>${c.n.name}</b><ul>${c.lines.join('')}</ul></div></div>`).join(''):'<p class="msg">No hay cambios de estadísticas base entre estos parches. Prueba con versiones más separadas.</p>';
+  }catch(e){box.innerHTML='<p class="msg">No se pudieron cargar los datos de uno de los parches.</p>'}
+};
+
+/* ---------- Mini-Quiz ---------- */
+const RANKS=[
+ {min:0,max:2,t:'Minion extraviado',m:'aún estás aprendiendo el mapa. Explora la sección de campeones y vuelve a intentarlo.'},
+ {min:3,max:6,t:'Invocador en ascenso',m:'conoces lo básico de la Grieta. Con un poco más de práctica llegarás lejos.'},
+ {min:7,max:9,t:'Veterano de la Grieta',m:'¡gran nivel! Casi dominas a todos los campeones.'},
+ {min:10,max:10,t:'Leyenda de Runaterra',m:'¡puntaje perfecto! Eres un verdadero maestro del conocimiento de campeones.'}];
+const QZ={Q:[],i:0,s:0,log:[],ans:false,done:false};
+const shuf=a=>[...a].sort(()=>Math.random()-.5);
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+const ranksHtml=s=>`<div class="ranks">${RANKS.map(r=>`<span class="${s!==undefined&&s>=r.min&&s<=r.max?'on':''}">${r.min===r.max?r.min:r.min+'–'+r.max}: ${r.t}</span>`).join('')}</div>`;
+function makeQuiz(){
+  const used=new Set(),Q=[];
+  const take=(n,f=()=>true)=>{const r=shuf(ORDER.filter(c=>!used.has(c.id)&&f(c))).slice(0,n);r.forEach(c=>used.add(c.id));return r};
+  const opts=(c,fn)=>shuf([c,...shuf(ORDER.filter(x=>x!==c)).slice(0,3)]).map(x=>({l:fn(x),ok:x===c}));
+  take(2).forEach(c=>Q.push({k:'Adivina por el ícono',q:'¿Qué campeón es este?',img:icon(c),o:opts(c,x=>x.name),a:c.name}));
+  take(2).forEach(c=>Q.push({k:'Adivina por el título',q:`¿A quién se conoce como «${c.title}»?`,o:opts(c,x=>x.name),a:c.name}));
+  take(1,c=>c.tags.length).forEach(c=>{const t=c.tags[0];
+    Q.push({k:'Clase',q:`¿Cuál es la clase principal de ${c.name}?`,o:shuf([t,...shuf(Object.keys(ROLE_ES).filter(r=>r!==t)).slice(0,3)]).map(r=>({l:ROLE_ES[r],ok:r===t})),a:ROLE_ES[t]})});
+  take(2,c=>c.tags.length).forEach(c=>{const real=Math.random()<.5,t=c.tags[0],fake=shuf(Object.keys(ROLE_ES).filter(r=>!c.tags.includes(r)))[0];
+    Q.push({k:'Verdadero o falso',q:`${c.name} tiene como clase principal «${ROLE_ES[real?t:fake]}».`,o:[{l:'Verdadero',ok:real},{l:'Falso',ok:!real}],a:real?'Verdadero':`Falso (es ${ROLE_ES[t]})`})});
+  const ST=[['hp','más vida base'],['armor','más armadura base'],['movespeed','más velocidad de movimiento'],['attackrange','más rango de ataque']];
+  shuf(ST).slice(0,2).forEach(([key,txt])=>{let g;
+    for(let t=0;t<30;t++){g=shuf(ORDER).slice(0,3).sort((a,b)=>b.stats[key]-a.stats[key]);if(g[0].stats[key]>g[1].stats[key])break}
+    Q.push({k:'Comparación',q:`¿Cuál de estos campeones tiene ${txt}?`,o:shuf(g).map(x=>({l:x.name,ok:x===g[0]})),a:g[0].name})});
+  take(1).forEach(c=>Q.push({k:'Escribe la respuesta',q:'Escribe el nombre del campeón (imagen ampliada).',zoom:splash(c.id),pos:`${15+Math.random()*70}% ${10+Math.random()*50}%`,typed:[c.name,c.id],a:c.name}));
+  return shuf(Q);
+}
+function qzIntro(){
+  const n=$('#nick').value.trim();
+  $('#qz').innerHTML=`<div class="qz-intro"><h3>Ponte a prueba${n?', '+n:''}</h3><p>10 preguntas con 6 formatos distintos: íconos, títulos, clases, verdadero o falso, comparaciones y respuesta escrita. Cada acierto suma 1 punto (de 0 a 10) y las preguntas cambian en cada partida.</p>${ranksHtml()}<button class="btn" data-a="start">Comenzar</button></div>`;
+  try{const b=localStorage.getItem('lol_best');if(b!==null)$('#qzBest').textContent=`Mejor puntaje: ${b}/10`}catch(e){}
+}
+function qzStart(){
+  if(!ORDER.length){$('#qz').innerHTML='<p class="msg">Los campeones aún no cargaron. Revisa tu conexión y recarga la página.</p>';return}
+  Object.assign(QZ,{Q:makeQuiz(),i:0,s:0,log:[],ans:false,done:false});qzShow();
+}
+function qzShow(){
+  const q=QZ.Q[QZ.i];QZ.ans=false;
+  let h=`<div class="qz-top"><span>Pregunta ${QZ.i+1}/${QZ.Q.length} · ${q.k}</span><span>Puntaje: <b>${QZ.s}</b></span></div><div class="bar"><i style="width:${QZ.i/QZ.Q.length*100}%"></i></div><h3 class="qz-q">${q.q}</h3>`;
+  if(q.img)h+=`<img class="qz-img" src="${q.img}" alt="Campeón a adivinar">`;
+  if(q.zoom)h+=`<div class="zoom" id="zm" style="background-image:url(${q.zoom});background-position:${q.pos}"></div>`;
+  h+=q.o?`<div class="qz-opts">${q.o.map((o,j)=>`<button class="qz-o" data-a="o" data-j="${j}"><kbd>${j+1}</kbd>${o.l}</button>`).join('')}</div>`
+        :`<div class="qz-type"><input id="qzIn" type="text" placeholder="Nombre del campeón" autocomplete="off" aria-label="Respuesta"><button class="btn sm" data-a="send">Responder</button></div>`;
+  $('#qz').innerHTML=h+'<div id="qzFb" class="qz-fb" aria-live="polite"></div>';
+  const inp=$('#qzIn');if(inp)inp.focus({preventScroll:true});
+}
+function qzAnswer(ok,idx,label){
+  if(QZ.ans)return;QZ.ans=true;const q=QZ.Q[QZ.i];if(ok)QZ.s++;QZ.log.push({q:q.q,ok,given:label,a:q.a});
+  const fb=$('#qzFb');fb.className='qz-fb '+(ok?'good':'bad');
+  fb.innerHTML=(ok?'✔ ¡Correcto!':`✘ Incorrecto. Respuesta: <b>${q.a}</b>`)+`<br><br><button class="btn sm" data-a="next">${QZ.i===QZ.Q.length-1?'Ver resultado':'Siguiente'}</button>`;
+  document.querySelectorAll('.qz-o').forEach((b,j)=>{b.disabled=true;if(q.o[j].ok)b.classList.add('ok');else if(j===idx)b.classList.add('no')});
+  const z=$('#zm');if(z)z.classList.add('reveal');
+  const inp=$('#qzIn');if(inp)inp.disabled=true;
+  $('.qz-top b').textContent=QZ.s;fb.querySelector('button').focus({preventScroll:true});
+}
+function qzSend(){
+  const inp=$('#qzIn');if(!inp||QZ.ans)return;const v=inp.value.trim();
+  if(!v){inp.focus();return}
+  qzAnswer(QZ.Q[QZ.i].typed.some(t=>norm(t)===norm(v)),-1,v);
+}
+function qzEnd(){
+  QZ.done=true;const s=QZ.s,r=RANKS.find(x=>s>=x.min&&s<=x.max),n=$('#nick').value.trim();let best=s;
+  try{best=Math.max(s,+localStorage.getItem('lol_best')||0);localStorage.setItem('lol_best',best)}catch(e){}
+  $('#qzBest').textContent=`Mejor puntaje: ${best}/10`;
+  $('#qz').innerHTML=`<div class="qz-end"><div class="qz-score">${s}<small>/10</small></div><h3>${r.t}</h3><p>${n?n+': ':''}${r.m}</p>${ranksHtml(s)}<div class="pips">${QZ.log.map((l,i)=>`<i class="${l.ok?'g':'b'}" style="animation-delay:${i*70}ms"></i>`).join('')}</div><button class="btn" data-a="start">Jugar de nuevo</button><details class="rev"><summary>Ver mis respuestas</summary><ul>${QZ.log.map((l,i)=>`<li class="${l.ok?'up':'down'}">${i+1}. ${l.q} → <b>${l.given}</b>${l.ok?'':` (correcta: ${l.a})`}</li>`).join('')}</ul></details></div>`;
+}
+$('#qz').addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='start')qzStart();
+  else if(a==='o'&&!QZ.ans){const j=+b.dataset.j,o=QZ.Q[QZ.i].o[j];qzAnswer(o.ok,j,o.l)}
+  else if(a==='send')qzSend();
+  else if(a==='next'){QZ.i++;QZ.i>=QZ.Q.length?qzEnd():qzShow()}
+});
+document.addEventListener('keydown',e=>{
+  if(e.target.id==='qzIn'){if(e.key==='Enter')qzSend();return}
+  if(!QZ.Q.length||QZ.ans||QZ.done||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
+  const q=QZ.Q[QZ.i],o=q&&q.o&&q.o[+e.key-1],r=$('#quiz').getBoundingClientRect();
+  if(o&&r.top<innerHeight&&r.bottom>0)qzAnswer(o.ok,+e.key-1,o.l);
+});
+qzIntro();
+
+/* ---------- Competitivo ---------- */
+$('#leagues').innerHTML=LEAGUES.map((l,i)=>`<div class="lg" tabindex="0" role="button" data-i="${i}"><h3>${l.n}</h3><small>${l.r}</small></div>`).join('');
+function pickLeague(el){document.querySelectorAll('.lg').forEach(x=>x.classList.remove('on'));el.classList.add('on');
+  const l=LEAGUES[el.dataset.i];$('#lgInfo').innerHTML=`<h3>${l.n} · ${l.r}</h3><p style="margin:.6rem 0">${l.d}</p><a class="btn sm" target="_blank" rel="noopener" href="https://lolesports.com">Ver calendario oficial</a>`}
+$('#leagues').addEventListener('click',e=>{const l=e.target.closest('.lg');if(l)pickLeague(l)});
+$('#leagues').addEventListener('keydown',e=>{if(e.key==='Enter'){const l=e.target.closest('.lg');if(l)pickLeague(l)}});
+
+applyPersonal();init();
+</script>
+</body>
+</html>
